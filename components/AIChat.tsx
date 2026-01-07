@@ -11,19 +11,22 @@ interface Props {
 
 const AIChat: React.FC<Props> = ({ devices, env, onControl }) => {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "您好！我是 Lumina，您的智能家居助手。今天有什么我可以帮您的吗？" }
+    { role: 'assistant', content: "您好！我是 Lumina。我可以帮您控制家里的设备或提供节能建议。试试直接对我说“打开客厅灯”。" }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }, [messages, isTyping]);
 
-  // FIX: Define a formal FunctionDeclaration for smart home control to replace fragile keyword matching
   const controlDeviceFunctionDeclaration: FunctionDeclaration = {
     name: 'controlDevice',
     parameters: {
@@ -43,47 +46,42 @@ const AIChat: React.FC<Props> = ({ devices, env, onControl }) => {
     },
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isTyping) return;
+  const handleSend = async (textOverride?: string) => {
+    const textToSend = textOverride || input.trim();
+    if (!textToSend || isTyping) return;
 
-    const userMsg = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
     setIsTyping(true);
 
     try {
-      // FIX: Always create a fresh instance of GoogleGenAI before generating content
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const model = 'gemini-3-flash-preview';
 
-      // FIX: Use systemInstruction field for character context and control constraints
       const systemInstruction = `
-        你叫 Lumina，是一位世界级的智能家居助手。
-        请始终使用中文回复用户。
+        你叫 Lumina，是一位极简主义风格的智能家居助手。
+        请始终使用简短、专业的中文回复。
         
-        当前家居状态:
+        当前状态:
         - 环境: ${JSON.stringify(env)}
         - 设备: ${JSON.stringify(devices)}
 
-        回复指南:
-        - 如果用户想控制设备（开关灯、锁门等），请务必使用 controlDevice 函数并传入正确的 deviceId。
-        - 根据环境数据提供有关节能或居家舒适度的建议（例如：如果温度高，建议开空调）。
-        - 保持语气亲切、简洁。
+        回复规范:
+        - 操作设备必须调用 controlDevice。
+        - 确认操作后，回复应极简（如：“好的，客厅灯已开启。”）。
+        - 严禁废话。
       `;
 
       const response = await ai.models.generateContent({
         model,
-        contents: userMsg,
+        contents: textToSend,
         config: {
           systemInstruction,
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
+          temperature: 0.5,
           tools: [{ functionDeclarations: [controlDeviceFunctionDeclaration] }],
         }
       });
 
-      // FIX: Handle structured function calls from the model
       if (response.functionCalls) {
         for (const fc of response.functionCalls) {
           if (fc.name === 'controlDevice') {
@@ -93,33 +91,59 @@ const AIChat: React.FC<Props> = ({ devices, env, onControl }) => {
         }
       }
 
-      // FIX: Use .text property to get text content from response
-      const aiResponse = response.text || "我已经为您处理了该请求。";
+      const aiResponse = response.text || "指令已执行。";
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
 
     } catch (error) {
       console.error('Gemini error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "连接出现问题，请稍后再试。" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "连接出现问题，请确认 API Key 已配置。" }]);
     } finally {
       setIsTyping(false);
     }
   };
 
+  // 简单的语音识别实现 (使用 Web Speech API)
+  const toggleListening = () => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("您的浏览器不支持语音识别。请在手机 Chrome 或 Safari 中尝试。");
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      handleSend(transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
+  };
+
   return (
-    <div className="flex flex-col h-[70vh] animate-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-emerald-400 flex items-center justify-center">
-          <i className="fa-solid fa-sparkles text-white"></i>
+    <div className="flex flex-col h-[72vh] animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <i className="fa-solid fa-sparkles text-white text-xl"></i>
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-[#020617] rounded-full"></div>
         </div>
         <div>
-          <h3 className="font-bold">Lumina 助手</h3>
-          <p className="text-xs text-emerald-400 font-medium">在线并随时待命</p>
+          <h3 className="font-black text-lg tracking-tight">LUMINA INTELLIGENCE</h3>
+          <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Active Listening Mode</p>
         </div>
       </div>
 
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide"
+        className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide mb-4"
       >
         {messages.map((m, i) => (
           <div 
@@ -127,10 +151,10 @@ const AIChat: React.FC<Props> = ({ devices, env, onControl }) => {
             className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div 
-              className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+              className={`max-w-[85%] px-5 py-3.5 rounded-3xl text-sm leading-relaxed shadow-sm ${
                 m.role === 'user' 
-                ? 'bg-blue-600 text-white' 
-                : 'glass text-slate-200'
+                ? 'bg-blue-600 text-white rounded-tr-none' 
+                : 'bg-slate-900 border border-white/5 text-slate-200 rounded-tl-none'
               }`}
             >
               {m.content}
@@ -139,29 +163,42 @@ const AIChat: React.FC<Props> = ({ devices, env, onControl }) => {
         ))}
         {isTyping && (
           <div className="flex justify-start">
-            <div className="glass px-4 py-3 rounded-2xl flex gap-1">
-              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
-              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100"></div>
-              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200"></div>
+            <div className="bg-slate-900 px-5 py-3.5 rounded-3xl rounded-tl-none border border-white/5 flex gap-1.5">
+              <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"></div>
+              <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce delay-100"></div>
+              <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce delay-200"></div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="mt-4 glass rounded-2xl p-2 flex items-center gap-2">
-        <input 
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="问问 Lumina..."
-          className="flex-1 bg-transparent border-none outline-none px-3 text-sm py-2"
-        />
+      <div className="flex items-center gap-3">
+        <div className="flex-1 bg-slate-900 rounded-2xl border border-white/5 p-1 flex items-center">
+          <input 
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="键入指令..."
+            className="flex-1 bg-transparent border-none outline-none px-4 text-sm py-3 text-white placeholder:text-slate-600"
+          />
+          <button 
+            onClick={() => handleSend()}
+            disabled={!input.trim() || isTyping}
+            className="w-10 h-10 rounded-xl bg-slate-800 text-blue-400 flex items-center justify-center hover:bg-slate-700 transition-colors disabled:opacity-30"
+          >
+            <i className="fa-solid fa-arrow-up"></i>
+          </button>
+        </div>
+        
         <button 
-          onClick={handleSend}
-          disabled={!input.trim() || isTyping}
-          className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center hover:bg-blue-500 transition-colors disabled:opacity-50"
+          onClick={toggleListening}
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+            isListening 
+            ? 'bg-rose-500 text-white animate-pulse' 
+            : 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+          }`}
         >
-          <i className="fa-solid fa-paper-plane"></i>
+          <i className={`fa-solid ${isListening ? 'fa-microphone-lines' : 'fa-microphone'}`}></i>
         </button>
       </div>
     </div>

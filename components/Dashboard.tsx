@@ -15,76 +15,74 @@ const Dashboard: React.FC<Props> = ({ devices, env, onToggle, onUpdateAC, onUpda
 
   const lights = devices.filter(d => d.type === DeviceType.LIGHT);
   const doors = devices.filter(d => d.type === DeviceType.DOOR);
-  const ac = devices.find(d => d.type === DeviceType.AC);
 
   const handleToggle = async (id: string) => {
     setSyncingId(id);
     await onToggle(id);
-    setTimeout(() => setSyncingId(null), 600);
+    setTimeout(() => setSyncingId(null), 800);
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <section className="glass rounded-3xl p-6 relative overflow-hidden border-l-4 border-l-blue-500">
-        <div className="flex justify-between items-start">
+    <div className="space-y-8 animate-in fade-in duration-1000">
+      {/* 核心指标卡片 */}
+      <section className="bg-slate-900 rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-blue-500/20 transition-all duration-1000"></div>
+        <div className="flex justify-between items-center relative z-10">
           <div className="space-y-1">
-            <span className="text-4xl font-light">{env.temperature.toFixed(1)}°</span>
-            <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">实时温度</p>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Indoor Temp</p>
+            <div className="flex items-start">
+              <span className="text-5xl font-black tracking-tighter text-white">{env.temperature.toFixed(1)}</span>
+              <span className="text-xl font-bold text-blue-500 mt-1 ml-1">°</span>
+            </div>
           </div>
-          <div className="text-right space-y-1">
-            <span className="text-4xl font-light">{env.humidity.toFixed(0)}%</span>
-            <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">实时湿度</p>
+          <div className="h-12 w-[1px] bg-white/10 mx-4"></div>
+          <div className="space-y-1 text-right">
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Humidity</p>
+            <div className="flex items-start justify-end">
+              <span className="text-5xl font-black tracking-tighter text-white">{env.humidity.toFixed(0)}</span>
+              <span className="text-xl font-bold text-emerald-500 mt-1 ml-1">%</span>
+            </div>
           </div>
-        </div>
-        <div className="mt-4 flex items-center gap-2 text-blue-400 text-[10px] font-mono">
-          <i className="fa-solid fa-code-branch text-[8px]"></i>
-          华为云 IoTDA 属性同步激活
         </div>
       </section>
 
-      {/* 针对截图优化的灯光控制 */}
+      {/* 设备列表 */}
       <section className="space-y-4">
-        <div className="flex justify-between items-end">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <i className="fa-solid fa-lightbulb text-amber-400"></i>
-            设备控制
-          </h2>
-          <span className="text-[10px] text-slate-500">服务: light | 属性: dengguang</span>
+        <div className="flex justify-between items-center px-1">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Lighting Systems</h2>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
         </div>
         
         <div className="space-y-4">
           {lights.map(light => (
-            <div key={light.id} className="glass rounded-3xl p-5 space-y-4 relative group">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${light.isOn ? 'bg-amber-400 text-slate-900 shadow-lg shadow-amber-400/20' : 'bg-slate-800 text-slate-500'}`}>
-                    <i className={`fa-solid ${light.isOn ? 'fa-lightbulb' : 'fa-lightbulb-slash'}`}></i>
+            <div key={light.id} className={`bg-slate-900 rounded-[2rem] p-6 border transition-all duration-500 ${light.isOn ? 'border-amber-500/30' : 'border-white/5'}`}>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${light.isOn ? 'bg-amber-400 text-slate-950 shadow-[0_0_20px_rgba(251,191,36,0.3)]' : 'bg-slate-800 text-slate-500'}`}>
+                    <i className={`fa-solid ${light.isOn ? 'fa-lightbulb' : 'fa-lightbulb-slash'} text-xl`}></i>
                   </div>
                   <div>
-                    <p className="font-bold text-slate-100">{light.name}</p>
-                    <p className="text-[10px] text-slate-500 flex items-center gap-1">
-                      <i className="fa-solid fa-circle-info text-[8px]"></i>
-                      ID: {light.id === 'l1' ? '69311837...TEST' : 'Local Device'}
-                    </p>
+                    <p className="font-black text-slate-100">{light.name}</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{light.isOn ? 'Active now' : 'Standby'}</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => handleToggle(light.id)}
                   disabled={syncingId === light.id}
-                  className={`w-12 h-6 rounded-full transition-all relative ${light.isOn ? 'bg-amber-400' : 'bg-slate-700'}`}
+                  className={`w-14 h-7 rounded-full transition-all relative ${light.isOn ? 'bg-amber-400 shadow-inner' : 'bg-slate-800 border border-white/5'}`}
                 >
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${light.isOn ? 'right-1' : 'left-1'}`}></div>
+                  <div className={`absolute top-1.5 w-4 h-4 rounded-full shadow-md transition-all duration-300 ${light.isOn ? 'right-1.5 bg-white' : 'left-1.5 bg-slate-600'}`}></div>
                 </button>
               </div>
               
-              <div className="space-y-2 px-2 pb-2">
-                <div className="flex justify-between text-[11px] font-medium">
-                  <span className="text-slate-400">物模型数值 (dengguang)</span>
-                  <span className={`font-mono ${light.isOn ? 'text-amber-400' : 'text-slate-600'}`}>
-                    {light.isOn ? (light.value || 0) : 'OFF (0)'}
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Intensity Control</span>
+                  <span className={`text-xs font-mono font-bold ${light.isOn ? 'text-amber-400' : 'text-slate-700'}`}>
+                    {Math.round((light.value || 0) / 2.55)}%
                   </span>
                 </div>
-                <div className="relative pt-1">
+                <div className="relative group/slider">
                   <input 
                     type="range" 
                     min="0" 
@@ -92,44 +90,29 @@ const Dashboard: React.FC<Props> = ({ devices, env, onToggle, onUpdateAC, onUpda
                     disabled={!light.isOn}
                     value={light.isOn ? (light.value || 0) : 0}
                     onChange={(e) => onUpdateLight(light.id, parseInt(e.target.value))}
-                    className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer transition-opacity ${
-                      light.isOn ? 'bg-slate-800 accent-amber-400 opacity-100' : 'bg-slate-900 opacity-30 cursor-not-allowed'
+                    className={`w-full h-1.5 rounded-full appearance-none cursor-pointer transition-all ${
+                      light.isOn ? 'bg-slate-800 accent-amber-400' : 'bg-slate-900 opacity-20'
                     }`}
                   />
-                  {light.id === 'l1' && (
-                    <div className="flex justify-between mt-1 text-[8px] text-slate-600 font-mono">
-                      <span>MIN: 0</span>
-                      <span>MAX: 255</span>
-                    </div>
-                  )}
                 </div>
               </div>
-              
-              {syncingId === light.id && (
-                <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px] rounded-3xl flex items-center justify-center animate-pulse">
-                  <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">云端同步中...</span>
-                </div>
-              )}
             </div>
           ))}
         </div>
       </section>
 
-      {/* 其他辅助设备 */}
+      {/* 安全系统 */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <i className="fa-solid fa-shield-halved text-blue-400"></i>
-          安防系统
-        </h2>
-        <div className="grid grid-cols-2 gap-3">
+        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 px-1">Security Node</h2>
+        <div className="grid grid-cols-2 gap-4">
           {doors.map(door => (
             <button
               key={door.id}
               onClick={() => handleToggle(door.id)}
-              className={`p-4 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 ${door.isOn ? 'bg-slate-800/80 text-emerald-400 border border-emerald-500/20' : 'glass text-slate-500 opacity-60'}`}
+              className={`p-6 rounded-[2rem] flex flex-col items-center gap-3 transition-all active:scale-95 border ${door.isOn ? 'bg-slate-900 border-emerald-500/30 text-emerald-400' : 'bg-slate-900 border-white/5 text-slate-600'}`}
             >
-              <i className={`fa-solid ${door.isOn ? 'fa-lock' : 'fa-lock-open'} text-lg`}></i>
-              <span className="text-[11px] font-bold">{door.name}</span>
+              <i className={`fa-solid ${door.isOn ? 'fa-lock' : 'fa-lock-open'} text-xl`}></i>
+              <span className="text-[11px] font-black uppercase tracking-widest">{door.name}</span>
             </button>
           ))}
         </div>
