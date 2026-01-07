@@ -1,0 +1,7 @@
+{
+  "name": "Lumina Smart Home",
+  "description": "A high-end IoT dashboard for home automation with intelligent insights powered by Gemini.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
