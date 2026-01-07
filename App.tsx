@@ -1,5 +1,4 @@
 
-// Fix: Corrected malformed import statement
 import React, { useState, useEffect, useRef } from 'react';
 import { DeviceState, HomeEnvironment, DeviceType } from './types';
 import { INITIAL_DEVICES } from './constants';

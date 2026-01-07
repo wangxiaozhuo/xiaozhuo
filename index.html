@@ -6,10 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Lumina Smart Home</title>
   
-  <!-- PWA 支持 -->
+  <!-- PWA 支持与移动端沉浸式体验 -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#020617">
+  
+  <!-- 安卓与 Chrome -->
   <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- iOS Safari 专用 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Lumina">
@@ -28,7 +32,7 @@
       padding: 0;
       -webkit-tap-highlight-color: transparent;
     }
-    /* 针对刘海屏的适配 */
+    /* 刘海屏/虚拟按键区域适配 */
     .safe-top { padding-top: env(safe-area-inset-top); }
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
     
@@ -59,12 +63,15 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- 关键修正：添加项目入口脚本 -->
   <script type="module" src="/index.tsx"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(console.error);
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('PWA ServiceWorker 已就绪');
+        }).catch(err => {
+          console.error('PWA 注册失败:', err);
+        });
       });
     }
   </script>

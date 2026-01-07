@@ -2,20 +2,24 @@
 {
   "short_name": "Lumina",
   "name": "Lumina Smart Home",
+  "description": "Premium IoT Control Center",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/553/553376.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "https://cdn-icons-png.flaticon.com/512/553/553376.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#0f172a",
-  "background_color": "#0f172a"
+  "orientation": "portrait",
+  "theme_color": "#020617",
+  "background_color": "#020617"
 }
